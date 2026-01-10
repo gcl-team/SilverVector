@@ -1,0 +1,26 @@
+[project]
+name = "silvervector"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "goh-chunlin",email = "chunlin.a.goh@dyson.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "customtkinter (>=5.2.2,<6.0.0)",
+    "simple-ddl-parser (>=1.7.1,<2.0.0)",
+    "sqlparse (>=0.5.5,<0.6.0)",
+    "pydantic (>=2.12.5,<3.0.0)",
+    "pygments (>=2.19.2,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [{include = "silvervector", from = "src"}]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"

@@ -1,0 +1,22 @@
+# Python specific
+*.pyc
+__pycache__
+*.egg-info/
+.pytest_cache
+.mypy_cache
+
+# Virtual environment
+.venv/
+
+# Distribution / Packaging
+/dist/
+/build/
+
+# Editors/OS specific
+.DS_Store
+.idea/
+.vscode/
+
+# Custom
+src/silvervector/examples/*.json
+src/silvervector/examples/*.db
