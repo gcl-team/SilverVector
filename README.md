@@ -17,7 +17,9 @@ While tools like Terraform are great for maintenance, they require an existing r
 # ✨ Expected Features
 
 ## Phase 1: The Core
-- [ ] Static DDL Parsing: * Description: Paste a CREATE TABLE script and automatically extract table names, column types, and constraints.
+- [ ] Static DDL Parsing: 
+
+  - Description: Paste a CREATE TABLE script and automatically extract table names, column types, and constraints.
   - Tech: simple-ddl-parser.
 
 - [ ] Smart Column Classification:
