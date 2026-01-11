@@ -1,11 +1,18 @@
 # 📦 SilverVector
 
-> "Precision Observability for the Modern Enterprise."
+> The "Day 0" Dashboard Prototyping Tool.
 
-SilverVector is a zero-trust observability architect. It takes your raw Database Schema (DDL) and instantly generates a professional Grafana Dashboard JSON, without ever requiring access to your live database.
+SilverVector is a strictly local, privacy-focused tool that acts as a **prototyping engine**. It takes your raw Database Schema (DDL) and instantly generates professional Grafana Dashboard JSON models. Designed for the "Solo Engineer" and freelancers, it bridges the gap between Raw Data and Insights without the manual click-work.
 
-# 🚀 The Mission
-Enterprises are often "data-blind" because their business logic is buried in SQL tables. SilverVector bridges the gap between Raw Data and Executive Insights in seconds.
+**Note:** This is an open-source personal hobby project. It is not affiliated with Grafana Labs or any commercial observability platform.
+
+# 🎯 Why SilverVector?
+
+**1. The "Freelancer's Burden"**
+Small teams and solo engineers often need professional dashboards but lack the time for hours of manual UI configuration. SilverVector acts as an **accelerator**, taking you from "Zero" to "First Draft" in seconds.
+
+**2. No-Lock-in Prototyping**
+While tools like Terraform are great for maintenance, they require an existing resource. SilverVector handles the chaotic "Drafting Phase". The output is standard Grafana JSON, which you fully own and can eventually export into GitOps workflows later.
 
 # ✨ Expected Features
 
@@ -21,7 +28,7 @@ Enterprises are often "data-blind" because their business logic is buried in SQL
 
   - Description: Export a valid Grafana Dashboard JSON containing a basic Time-Series graph and a Stat panel.
 
-## Phase 2: The "Sales Engineer" Polish
+## Phase 2: Enhanced User Experience
 - [ ] Auto-Join Suggestions:
 
   - Description: Detect Foreign Keys or matching column names (e.g., user_id) to suggest SQL JOIN queries for cross-table insights.
@@ -33,7 +40,7 @@ Enterprises are often "data-blind" because their business logic is buried in SQL
 
   - Description: Automatically add Grafana Variables (Dropdowns) for categorical columns like Region or Status.
 
-## Phase 3: The "Kiasi" SME Layer
+## Phase 3: Accessibility & Ease of Use
 - [ ] Local Portability:
   - Description: A single-file .exe build that runs on an SME manager's laptop without needing to install Python.
 
@@ -71,11 +78,11 @@ poetry run python src/silvervector/main.py
 4. Click "Generate Dashboard".
 5. Import the resulting .json into your Grafana instance.
 
-# 🛡 Security & Privacy
+# 🛡 Philosophy & Security
 
-- No Database Connection: SilverVector never asks for your host, username, or password.
-- Local Processing: Your schema never leaves your machine.
-- Static Only: We read the structure, not the data.
+- **Zero-Knowledge:** SilverVector never asks for database credentials or API keys. We only need your Schema structure (DDL).
+- **Offline-First:** Built with a desktop GUI (CustomTkinter) to work in air-gapped or low-connectivity environments.
+- **Human-in-the-Loop:** Regex isn't perfect. The UI allows you to verify and tweak detected metrics *before* generation, preventing broken JSONs.
 
 # 🏗 Project Structure
 
@@ -89,3 +96,23 @@ silvervector/
 ├── pyproject.toml
 └── README.md
 ```
+
+# 🔮 Future Roadmap (Concepts)
+
+These are experimental ideas for expanding the tool's capabilities:
+
+1. **Automated Alert Provisioning**
+   - *Concept:* Automatically generate Grafana Alert Rules in the JSON based on schema patterns (e.g., column names like `status` or `error_code`).
+   - *Goal:* Provide basic monitoring "out of the box" so users have starting points for their alerting strategy.
+
+2. **Log Pattern Recognition (Loki Support)**
+   - *Concept:* Allow users to provide a sample log line (JSON/NGINX) alongside their SQL schema.
+   - *Goal:* Generate basic Loki dashboard panels (Logs Volume, Error Rate) to complement SQL metrics.
+
+3. **Query Optimization Hints**
+   - *Concept:* Analyze the DDL and generated dashboard queries to suggest potential indexes (e.g., "Filtering by `user_id` might benefit from an index").
+   - *Goal:* Help users avoid slow queries when deploying generated dashboards on production databases.
+
+4. **Reporting Templates**
+   - *Concept:* Add a specific template option for "Executive Summary" dashboards.
+   - *Goal:* Create layouts optimized for PDF export and monthly reporting (high-level KPIs, uptime stats).
