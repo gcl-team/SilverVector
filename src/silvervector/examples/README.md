@@ -16,4 +16,4 @@ Once Grafana is running at http://localhost:3000:
 
 1. Navigate to Connections > Data Sources;
 2. Search for SQLite;
-3. In the Path field, enter the container path: /var/lib/grafana/silvervector_data/nampak_demo.db.
+3. In the Path field, enter the container path: /var/lib/grafana/silvervector_data/silvervector_demo.db.
