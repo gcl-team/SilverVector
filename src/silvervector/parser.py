@@ -8,6 +8,7 @@ class ColumnModel(BaseModel):
     is_time_col: bool = False
     is_metric: bool = False
     is_label: bool = False
+    is_categorical: bool = False
     unit: str = "short"
 
 class SilverVectorParser:
@@ -64,7 +65,28 @@ class SilverVectorParser:
         is_metric = ("int" in ctype or "decimal" in ctype or "float" in ctype) and "id" not in name
         
         # Logic: Identify Labels (Dimensions to group by)
-        is_label = ("varchar" in ctype or "status" in name or "id" in name)
+        is_label = (
+            "varchar" in ctype or 
+            "text" in ctype or 
+            "status" in name or 
+            "id" in name
+        )
+
+        # Logic: Identify Categorical (Good for Pie Charts/Stat Grouping)
+        is_categorical = (
+            "status" in name or 
+            "state" in name or 
+            "type" in name or 
+            "category" in name or
+            "level" in name or
+            "priority" in name or
+            "severity" in name or
+            "version" in name or
+            "source" in name or
+            "target" in name or
+            "method" in name or
+            "mode" in name
+        )
 
         return ColumnModel(
             name=col["name"],
@@ -72,5 +94,6 @@ class SilverVectorParser:
             is_time_col=is_time,
             is_metric=is_metric,
             is_label=is_label,
+            is_categorical=is_categorical,
             unit=unit
         )

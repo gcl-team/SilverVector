@@ -223,27 +223,33 @@ class SilverVectorApp(ctk.CTk):
                 for table in tables:
                     table_name = table['name']
                     
+                    # Filter for relevant columns first
+                    relevant_cols = [c for c in table['columns'] if c.is_metric or c.is_time_col]
+                    
+                    # If no relevant columns, skip this table entirely
+                    if not relevant_cols:
+                        continue
+                    
                     # Table Heading
                     heading = ctk.CTkLabel(self.preview_scroll, text=f"\U0001F4C4 {table_name}", 
                                          font=ctk.CTkFont(size=13, weight="bold"), anchor="w")
                     heading.pack(fill="x", pady=(10, 5))
 
                     # Group columns
-                    for col in table['columns']:
-                        if col.is_metric or col.is_time_col:
-                            icon = "\U0001F4C8" if col.is_metric else "\U0001F550"
-                            col_frame = ctk.CTkFrame(self.preview_scroll, fg_color="transparent")
-                            col_frame.pack(fill="x", pady=2, padx=10)
-                            
-                            # Checkbox for enabled/disabled
-                            chk = ctk.CTkCheckBox(col_frame, text=f"{col.name} ({col.data_type})", 
-                                                font=ctk.CTkFont(size=12))
-                            chk.select()
-                            chk.pack(side="left")
-                            
-                            # Type Badge
-                            badge = ctk.CTkLabel(col_frame, text=icon, width=20)
-                            badge.pack(side="right")
+                    for col in relevant_cols:
+                        icon = "\U0001F4C8" if col.is_metric else "\U0001F550"
+                        col_frame = ctk.CTkFrame(self.preview_scroll, fg_color="transparent")
+                        col_frame.pack(fill="x", pady=2, padx=10)
+                        
+                        # Checkbox for enabled/disabled
+                        chk = ctk.CTkCheckBox(col_frame, text=f"{col.name} ({col.data_type})", 
+                                            font=ctk.CTkFont(size=12))
+                        chk.select()
+                        chk.pack(side="left")
+                        
+                        # Type Badge
+                        badge = ctk.CTkLabel(col_frame, text=icon, width=20)
+                        badge.pack(side="right")
 
                 self.set_status("Analysis completed. Config updated.")
             else:
@@ -288,6 +294,61 @@ class SilverVectorApp(ctk.CTk):
             x_pos = 0
             y_pos = 4
 
+            # --- Orchard Core Specific Detection & Panels ---
+            # Normalize table names (remove brackets) for detection
+            table_names = [t['name'].replace('[', '').replace(']', '') for t in tables]
+            is_orchard = "ContentItemIndex" in table_names
+
+            if is_orchard:
+                # 1. Content Velocity (Graph)
+                # Daily publishing rate
+                vel_sql = (
+                    "SELECT (unixepoch(PublishedUtc)/86400)*86400 as time, count(*) as value "
+                    "FROM ContentItemIndex WHERE Published = 1 "
+                    "AND unixepoch(PublishedUtc) BETWEEN $__from/1000 AND $__to/1000 "
+                    "GROUP BY 1 ORDER BY 1"
+                )
+                graph_panels.append(self.create_time_series_panel(
+                    "Content Velocity (Items/Day)", vel_sql, panel_id_counter, x_pos, y_pos, "short"
+                ))
+                panel_id_counter += 1
+                x_pos += 12
+                if x_pos >= 24: x_pos = 0; y_pos += 8
+
+                # 2. Content Types (Pie)
+                type_sql = "SELECT ContentType, count(*) as value FROM ContentItemIndex WHERE Published = 1 GROUP BY 1 ORDER BY 2 DESC"
+                graph_panels.append(self.create_pie_chart_panel(
+                    "Content Type Distribution", type_sql, panel_id_counter, x_pos, y_pos
+                ))
+                panel_id_counter += 1
+                x_pos += 12
+                if x_pos >= 24: x_pos = 0; y_pos += 8
+                
+                # 3. Recent Activity (Table)
+                # Last 10 modifications
+                activity_sql = (
+                    "SELECT ModifiedUtc, DisplayText, Author, ContentType "
+                    "FROM ContentItemIndex "
+                    "ORDER BY ModifiedUtc DESC LIMIT 10"
+                )
+                graph_panels.append(self.create_table_panel(
+                    "Recent Content Activity", activity_sql, panel_id_counter, x_pos, y_pos
+                ))
+                panel_id_counter += 1
+                x_pos += 12
+                if x_pos >= 24: x_pos = 0; y_pos += 8
+                
+                # 4. Total Users (Stat) - if UserIndex exists
+                if "UserIndex" in table_names:
+                    user_sql = "SELECT count(*) as value FROM UserIndex"
+                    stat_panels.append(self.create_stat_panel(
+                        "Total Users", user_sql, panel_id_counter, x_pos, y_pos, "short"
+                    ))
+                    panel_id_counter += 1
+                    x_pos += 12
+                    if x_pos >= 24: x_pos = 0; y_pos += 8
+
+            # --- Generic Panel Generation ---
             for table in tables:
                 table_name = table['name']
                 t_cols = table['columns']
@@ -346,6 +407,47 @@ class SilverVectorApp(ctk.CTk):
                     panel_id_counter += 1
 
                     # --- 3. Grid Layout Logic for Graphs ---
+                    x_pos += 12
+                    if x_pos >= 24:
+                        x_pos = 0
+                        y_pos += 8
+
+                # --- 4. Total Records Stat ---
+                count_sql = f"SELECT count(*) as value FROM {table_name}"
+                count_stat = self.create_stat_panel(
+                    title=f"{table_name} - Total Records",
+                    sql_query=count_sql,
+                    panel_id=panel_id_counter,
+                    x_pos=x_pos,
+                    y_pos=y_pos,
+                    unit="short"
+                )
+                stat_panels.append(count_stat)
+                panel_id_counter += 1
+                
+                x_pos += 12
+                if x_pos >= 24:
+                    x_pos = 0
+                    y_pos += 8
+
+                # --- 5. Categorical Pie Charts ---
+                categorical_cols = [c for c in t_cols if c.is_categorical]
+                for cat_col in categorical_cols:
+                    pie_sql = (
+                        f"SELECT {cat_col.name}, count(*) as value "
+                        f"FROM {table_name} "
+                        f"GROUP BY 1 ORDER BY 2 DESC"
+                    )
+                    pie = self.create_pie_chart_panel(
+                        title=f"{table_name} - {cat_col.name} Distribution",
+                        sql_query=pie_sql,
+                        panel_id=panel_id_counter,
+                        x_pos=x_pos,
+                        y_pos=y_pos
+                    )
+                    graph_panels.append(pie)
+                    panel_id_counter += 1
+
                     x_pos += 12
                     if x_pos >= 24:
                         x_pos = 0
@@ -471,9 +573,68 @@ class SilverVectorApp(ctk.CTk):
                     "thresholds": {
                         "mode": "absolute",
                         "steps": [
-                            {"color": "red", "value": None},
-                            {"color": "green", "value": 10000} # Green if > 10000
+                            {"color": "green", "value": None}
                         ]
+                    }
+                }
+            }
+        }
+
+    # Helper for generating pie chart panel JSON
+    def create_pie_chart_panel(self, title, sql_query, panel_id, x_pos, y_pos):
+        return {
+            "title": title,
+            "type": "piechart",
+            "id": panel_id,
+            "gridPos": {"h": 8, "w": 12, "x": x_pos, "y": y_pos},
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${datasource}"
+            },
+            "targets": [
+                {
+                    "datasource": {"type": "frser-sqlite-datasource", "uid": "${datasource}"},
+                    "format": "table",
+                    "queryText": sql_query,
+                    "rawQueryText": sql_query,
+                    "rawSql": sql_query,
+                    "refId": "A",
+                }
+            ],
+            "options": {
+                "legend": {"displayMode": "list", "placement": "right"},
+                "pieType": "donut",
+                "reduceOptions": {"values": True, "calcs": ["lastNotNull"], "fields": ""}
+            }
+        }
+
+    # Helper for generating table panel JSON
+    def create_table_panel(self, title, sql_query, panel_id, x_pos, y_pos):
+        return {
+            "title": title,
+            "type": "table",
+            "id": panel_id,
+            "gridPos": {"h": 8, "w": 12, "x": x_pos, "y": y_pos},
+            "datasource": {
+                "type": "frser-sqlite-datasource",
+                "uid": "${datasource}"
+            },
+            "targets": [
+                {
+                    "datasource": {"type": "frser-sqlite-datasource", "uid": "${datasource}"},
+                    "format": "table",
+                    "queryText": sql_query,
+                    "rawQueryText": sql_query,
+                    "rawSql": sql_query,
+                    "refId": "A",
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "align": "auto",
+                        "displayMode": "auto",
+                        "inspect": False
                     }
                 }
             }
